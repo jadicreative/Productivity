@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To Do List Pro Ultimate + Validasi</title>
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-sub: #666666;
+            --border: #e0e0e0;
+            --high: #ff6b6b;
+            --med: #ffa500;
+            --low: #4caf50;
+            --pomodoro: #ff6b6b;
+        }
+
+        body.dark-mode {
+            --bg-color: #1a1a2e;
+            --card-bg: #16213e;
+            --text-main: #eaeaea;
+            --text-sub: #a0a0a0;
+            --border: #2a2a40;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; transition: background 0.3s, color 0.3s; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-color); min-height: 100vh; display: flex; justify-content: center; padding: 20px; }
+
+        .container {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+            width: 100%;
+            padding: 30px;
+        }
+
+        /* Header & Pomodoro */
+        .header-section { 
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;
+        }
+        
+        .pomodoro-widget {
+            background: var(--pomodoro); color: white; padding: 10px 20px; border-radius: 50px;
+            display: flex; align-items: center; gap: 15px; font-weight: bold;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+        .timer-display { font-size: 1.2em; font-family: monospace; min-width: 60px; text-align: center; }
+        .pomo-btn {
+            background: rgba(255,255,255,0.2); border: none; color: white; width: 30px; height: 30px;
+            border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .pomo-btn:hover { background: rgba(255,255,255,0.4); }
+
+        h1 { color: var(--text-main); font-size: 1.5em; }
+        
+        /* Progress Bar */
+        .progress-section {
+            margin-bottom: 25px; padding: 15px;
+            background: rgba(102, 126, 234, 0.1); border-radius: 15px;
+        }
+        .progress-header { display: flex; justify-content: space-between; margin-bottom: 5px; color: var(--text-main); font-weight: bold; }
+        .progress-bar-container { height: 10px; background: #ddd; border-radius: 5px; overflow: hidden; }
+        .progress-bar { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); width: 0%; transition: width 0.5s; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+        .tab-btn {
+            padding: 10px 20px; background: none; border: none; font-size: 1em; font-weight: bold;
+            color: var(--text-sub); cursor: pointer; border-radius: 10px;
+        }
+        .tab-btn.active { background: var(--primary); color: white; }
+
+        /* Views */
+        .view-section { display: none; animation: fadeIn 0.3s; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Category Manager */
+        .category-manager {
+            display: flex; gap: 10px; margin-bottom: 15px; padding: 10px;
+            background: rgba(0,0,0,0.03); border-radius: 10px; align-items: center;
+        }
+        .cat-input { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--card-bg); color: var(--text-main); }
+        .cat-btn { padding: 8px 15px; background: var(--text-main); color: var(--card-bg); border: none; border-radius: 5px; cursor: pointer; }
+        
+        .category-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+        .cat-tag {
+            padding: 5px 12px; border-radius: 15px; font-size: 0.85em; cursor: pointer;
+            border: 1px solid var(--border); color: var(--text-main); background: var(--bg-color);
+            display: flex; align-items: center; gap: 5px;
+        }
+        .cat-tag.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .delete-cat { background: none; border: none; color: inherit; cursor: pointer; font-weight: bold; }
+        .delete-cat:hover { color: #ff6b6b; }
+
+        /* Input Form */
+        .input-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        input, select { padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--card-bg); color: var(--text-main); }
+        .add-btn { grid-column: span 4; padding: 12px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+        /* Task List */
+        .task-list { list-style: none; max-height: 400px; overflow-y: auto; }
+        .task-item {
+            display: flex; align-items: center; padding: 12px; margin-bottom: 10px;
+            background: var(--bg-color); border-radius: 10px; border-left: 5px solid transparent;
+        }
+        .task-item.priority-high { border-left-color: var(--high); }
+        .task-item.priority-medium { border-left-color: var(--med); }
+        .task-item.priority-low { border-left-color: var(--low); }
+        .task-content { flex: 1; margin-left: 10px; }
+        .task-text { font-weight: bold; color: var(--text-main); }
+        .task-meta { font-size: 0.8em; color: var(--text-sub); margin-top: 4px; display: flex; gap: 10px; }
+        .badge { padding: 2px 6px; border-radius: 4px; background: #eee; color: #555; font-size: 0.75em; }
+        .action-btn { background: none; border: none; cursor: pointer; font-size: 1.2em; margin-left: 10px; opacity: 0.6; }
+        .action-btn:hover { opacity: 1; }
+
+        /* Calendar */
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .calendar-nav { background: none; border: 1px solid var(--border); padding: 5px 15px; border-radius: 5px; cursor: pointer; color: var(--text-main); }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
+        .day-name { font-weight: bold; color: var(--text-sub); padding: 10px 0; }
+        .calendar-day {
+            aspect-ratio: 1; border: 1px solid var(--border); border-radius: 8px; padding: 5px;
+            cursor: pointer; display: flex; flex-direction: column; align-items: center;
+            position: relative; background: var(--bg-color); color: var(--text-main);
+        }
+        .calendar-day:hover { border-color: var(--primary); }
+        .calendar-day.today { border: 2px solid var(--primary); font-weight: bold; }
+        .calendar-day.selected { background: var(--primary); color: white; }
+        .calendar-day.empty { background: transparent; border: none; cursor: default; }
+        .task-dots { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; margin-top: 2px; }
+        .dot { width: 5px; height: 5px; border-radius: 50%; }
+        .dot.high { background: var(--high); } .dot.med { background: var(--med); } .dot.low { background: var(--low); }
+
+        .theme-toggle { background: none; border: 1px solid var(--border); padding: 5px 10px; border-radius: 5px; cursor: pointer; color: var(--text-main); }
+
+        /* Custom Modal for Validation */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-box {
+            background: var(--card-bg); padding: 25px; border-radius: 15px; width: 90%; max-width: 400px;
+            text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .modal-title { font-size: 1.2em; font-weight: bold; color: var(--text-main); margin-bottom: 10px; }
+        .modal-text { color: var(--text-sub); margin-bottom: 20px; }
+        .modal-buttons { display: flex; gap: 10px; justify-content: center; }
+        .btn-modal { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: #ddd; color: #333; }
+
+        @media (max-width: 600px) {
+            .input-grid { grid-template-columns: 1fr; }
+            .add-btn { grid-column: span 1; }
+            .header-section { flex-direction: column; align-items: stretch; }
+            .pomodoro-widget { justify-content: space-between; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-section">
+        <h1>📝 To Do Pro Ultimate</h1>
+        
+        <!-- Pomodoro Widget -->
+        <div class="pomodoro-widget">
+            <span id="pomoMode">FOKUS</span>
+            <span class="timer-display" id="timerDisplay">25:00</span>
+            <button class="pomo-btn" onclick="toggleTimer()" id="playPauseBtn">▶</button>
+            <button class="pomo-btn" onclick="resetTimer()">↺</button>
+        </div>
+
+        <button class="theme-toggle" onclick="toggleTheme()">🌙 Mode Gelap</button>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-section">
+        <div class="progress-header">
+            <span>Persentase Keberhasilan</span>
+            <span id="percentageText">0%</span>
+        </div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('list')">📋 Daftar Tugas</button>
+        <button class="tab-btn" onclick="switchTab('calendar')">📅 Kalender</button>
+    </div>
+
+    <!-- TAB 1: DAFTAR TUGAS -->
+    <div id="view-list" class="view-section active">
+        <!-- Category Manager -->
+        <div class="category-manager">
+            <input type="text" id="newCatInput" class="cat-input" placeholder="Nama Kategori Baru...">
+            <button class="cat-btn" onclick="addCategory()">+ Tambah</button>
+        </div>
+        <div class="category-tags" id="categoryFilters"></div>
+
+        <!-- Add Task Form -->
+        <div class="input-grid">
+            <input type="text" id="taskInput" placeholder="Nama tugas...">
+            <select id="taskCategory"></select>
+            <select id="taskPriority">
+                <option value="high">Tinggi 🔴</option>
+                <option value="medium" selected>Sedang 🟠</option>
+                <option value="low">Rendah 🟢</option>
+            </select>
+            <input type="datetime-local" id="taskDeadline">
+            <button class="add-btn" onclick="validateAndAddTask()">Tambah Tugas</button>
+        </div>
+
+        <ul class="task-list" id="mainTaskList"></ul>
+    </div>
+
+    <!-- TAB 2: KALENDER -->
+    <div id="view-calendar" class="view-section">
+        <div class="calendar-header">
+            <button class="calendar-nav" onclick="changeMonth(-1)">❮</button>
+            <h2 id="monthYearDisplay" style="color: var(--text-main);"></h2>
+            <button class="calendar-nav" onclick="changeMonth(1)">❯</button>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        
+        <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px;">
+            <h3 style="color: var(--text-main); margin-bottom: 10px;">Tugas tanggal: <span id="selectedDateText">-</span></h3>
+            <div id="calendarDayTasks"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Modal -->
+<div class="modal-overlay" id="validationModal">
+    <div class="modal-box">
+        <div class="modal-title">⚠️ Peringatan Waktu</div>
+        <div class="modal-text">Anda belum memilih waktu deadline. Tugas akan ditambahkan ke daftar umum tetapi <b>tidak akan muncul di kalender</b>.</div>
+        <div class="modal-buttons">
+            <button class="btn-modal btn-secondary" onclick="closeModal()">Pilih Waktu</button>
+            <button class="btn-modal btn-primary" onclick="confirmAddWithoutTime()">Lanjutkan</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- DATA & STATE ---
+    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+    let categories = JSON.parse(localStorage.getItem('categories')) || ['Umum', 'Kerja', 'Pribadi'];
+    let currentFilter = 'all';
+    let currentDate = new Date();
+    let selectedDate = null;
+    let tempTaskData = null; // Menyimpan data sementara saat validasi
+
+    // Pomodoro State
+    let timerInterval;
+    let timeLeft = 25 * 60;
+    let isRunning = false;
+    let mode = 'focus';
+
+    // --- INITIALIZATION ---
+    window.onload = function() {
+        renderCategories();
+        updateStats();
+        renderMainList();
+        renderCalendar();
+        updateTimerDisplay();
+    };
+
+    // --- VALIDATION LOGIC ---
+    function validateAndAddTask() {
+        const text = document.getElementById('taskInput').value;
+        const category = document.getElementById('taskCategory').value;
+        const priority = document.getElementById('taskPriority').value;
+        const deadline = document.getElementById('taskDeadline').value;
+
+        if (!text) return alert('Isi nama tugas!');
+
+        // Simpan data ke variabel sementara
+        tempTaskData = { text, category, priority, deadline };
+
+        if (!deadline) {
+            // Jika tidak ada deadline, tampilkan modal
+            document.getElementById('validationModal').style.display = 'flex';
+        } else {
+            // Jika ada deadline, langsung tambah
+            processAddTask(tempTaskData);
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('validationModal').style.display = 'none';
+        document.getElementById('taskDeadline').focus();
+    }
+
+    function confirmAddWithoutTime() {
+        document.getElementById('validationModal').style.display = 'none';
+        processAddTask(tempTaskData);
+    }
+
+    function processAddTask(data) {
+        tasks.push({
+            id: Date.now(), 
+            text: data.text, 
+            category: data.category, 
+            priority: data.priority, 
+            deadline: data.deadline || null, // Bisa null
+            completed: false, 
+            createdAt: new Date().toISOString()
+        });
+
+        saveData();
+        document.getElementById('taskInput').value = '';
+        document.getElementById('taskDeadline').value = ''; // Reset input waktu
+        renderMainList();
+        renderCalendar();
+        updateStats();
+        tempTaskData = null;
+    }
+
+    // --- POMODORO LOGIC ---
+    function toggleTimer() {
+        if (isRunning) {
+            clearInterval(timerInterval);
+            isRunning = false;
+            document.getElementById('playPauseBtn').innerText = '▶';
+        } else {
+            isRunning = true;
+            document.getElementById('playPauseBtn').innerText = '⏸';
+            timerInterval = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateTimerDisplay();
+                } else {
+                    finishTimer();
+                }
+            }, 1000);
+        }
+    }
+
+    function resetTimer() {
+        clearInterval(timerInterval);
+        isRunning = false;
+        document.getElementById('playPauseBtn').innerText = '▶';
+        mode = 'focus';
+        timeLeft = 25 * 60;
+        document.getElementById('pomoMode').innerText = "FOKUS";
+        document.querySelector('.pomodoro-widget').style.background = "var(--pomodoro)";
+        updateTimerDisplay();
+    }
+
+    function finishTimer() {
+        clearInterval(timerInterval);
+        isRunning = false;
+        playAlarm();
+        if (mode === 'focus') {
+            alert("Waktu Fokus Selesai! Saatnya istirahat 5 menit.");
+            mode = 'break';
+            timeLeft = 5 * 60;
+            document.getElementById('pomoMode').innerText = "ISTIRAHAT";
+            document.querySelector('.pomodoro-widget').style.background = "#4caf50";
+        } else {
+            alert("Istirahat Selesai! Ayo fokus lagi.");
+            resetTimer();
+        }
+        document.getElementById('playPauseBtn').innerText = '▶';
+        updateTimerDisplay();
+    }
+
+    function updateTimerDisplay() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        document.getElementById('timerDisplay').innerText = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function playAlarm() {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'square';
+        osc.frequency.value = 440;
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
+        setTimeout(() => { osc.stop(); ctx.close(); }, 500);
+    }
+
+    // --- STATS & PROGRESS ---
+    function updateStats() {
+        const total = tasks.length;
+        const completed = tasks.filter(t => t.completed).length;
+        const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+        
+        document.getElementById('percentageText').innerText = percent + '%';
+        document.getElementById('progressBar').style.width = percent + '%';
+        
+        const bar = document.getElementById('progressBar');
+        if(percent < 50) bar.style.background = '#ff6b6b';
+        else if(percent < 80) bar.style.background = '#ffa500';
+        else bar.style.background = 'linear-gradient(90deg, #667eea, #764ba2)';
+    }
+
+    // --- CATEGORY LOGIC ---
+    function addCategory() {
+        const input = document.getElementById('newCatInput');
+        const name = input.value.trim();
+        if (name && !categories.includes(name)) {
+            categories.push(name);
+            saveData();
+            renderCategories();
+            input.value = '';
+        }
+    }
+
+    function deleteCategory(name, event) {
+        event.stopPropagation();
+        if (confirm(`Hapus kategori "${name}"? Tugas akan pindah ke "Umum".`)) {
+            tasks.forEach(t => { if (t.category === name) t.category = 'Umum'; });
+            categories = categories.filter(c => c !== name);
+            if(currentFilter === name) currentFilter = 'all';
+            saveData();
+            renderCategories();
+            renderMainList();
+            renderCalendar();
+        }
+    }
+
+    function renderCategories() {
+        const filterContainer = document.getElementById('categoryFilters');
+        const selectDropdown = document.getElementById('taskCategory');
+        
+        let html = `<div class="cat-tag ${currentFilter === 'all' ? 'active' : ''}" onclick="filterBy('all')">Semua</div>`;
+        categories.forEach(cat => {
+            html += `
+                <div class="cat-tag ${currentFilter === cat ? 'active' : ''}" onclick="filterBy('${cat}')">
+                    ${cat} <span class="delete-cat" onclick="deleteCategory('${cat}', event)">×</span>
+                </div>`;
+        });
+        filterContainer.innerHTML = html;
+        selectDropdown.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    function filterBy(cat) {
+        currentFilter = cat;
+        renderCategories();
+        renderMainList();
+    }
+
+    // --- TASK LOGIC ---
+    function toggleTask(id) {
+        const task = tasks.find(t => t.id === id);
+        if (task) {
+            task.completed = !task.completed;
+            saveData();
+            renderMainList();
+            renderCalendar();
+            updateStats();
+        }
+    }
+
+    function deleteTask(id) {
+        if(confirm('Hapus tugas?')) {
+            tasks = tasks.filter(t => t.id !== id);
+            saveData();
+            renderMainList();
+            renderCalendar();
+            updateStats();
+        }
+    }
+
+    function saveData() {
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+        localStorage.setItem('categories', JSON.stringify(categories));
+    }
+
+    // RENDER LIST DENGAN SORTING PRIORITAS & TANGGAL
+    function renderMainList() {
+        const list = document.getElementById('mainTaskList');
+        let filtered = tasks;
+        if (currentFilter !== 'all') filtered = tasks.filter(t => t.category === currentFilter);
+        
+        // Sorting Logic:
+        // 1. Status (Belum selesai di atas)
+        // 2. Prioritas (High=1, Med=2, Low=3)
+        // 3. Tanggal (Yang paling dekat di atas, yang null di bawah)
+        filtered.sort((a, b) => {
+            if (a.completed !== b.completed) return a.completed ? 1 : -1;
+            
+            const pMap = { 'high': 1, 'medium': 2, 'low': 3 };
+            if (pMap[a.priority] !== pMap[b.priority]) return pMap[a.priority] - pMap[b.priority];
+            
+            if (!a.deadline) return 1;
+            if (!b.deadline) return -1;
+            return new Date(a.deadline) - new Date(b.deadline);
+        });
+
+        list.innerHTML = filtered.map(task => `
+            <li class="task-item priority-${task.priority}" style="opacity: ${task.completed ? 0.6 : 1}">
+                <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})">
+                <div class="task-content">
+                    <div class="task-text" style="text-decoration: ${task.completed ? 'line-through' : ''}">${task.text}</div>
+                    <div class="task-meta">
+                        <span class="badge">${task.category}</span>
+                        <span>${task.deadline ? '⏰ ' + new Date(task.deadline).toLocaleString('id-ID') : '📅 Tanpa Jadwal'}</span>
+                    </div>
+                </div>
+                <button class="action-btn" onclick="deleteTask(${task.id})">🗑️</button>
+            </li>
+        `).join('');
+    }
+
+    // --- CALENDAR LOGIC ---
+    function switchTab(tab) {
+        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(`view-${tab}`).classList.add('active');
+        event.target.classList.add('active');
+        if(tab === 'calendar') renderCalendar();
+    }
+
+    function renderCalendar() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        document.getElementById('monthYearDisplay').innerText = new Date(year, month).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const grid = document.getElementById('calendarGrid');
+        grid.innerHTML = '';
+
+        ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].forEach(d => grid.innerHTML += `<div class="day-name">${d}</div>`);
+        for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="calendar-day empty"></div>`;
+
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            // HANYA ambil tugas yang memiliki deadline DAN cocok dengan tanggal ini
+            const dayTasks = tasks.filter(t => t.deadline && t.deadline.startsWith(dateStr) && !t.completed);
+            
+            let dots = dayTasks.map(t => `<div class="dot ${t.priority}"></div>`).join('');
+            
+            const div = document.createElement('div');
+            div.className = `calendar-day ${dateStr === todayStr ? 'today' : ''} ${selectedDate === dateStr ? 'selected' : ''}`;
+            div.innerHTML = `<div>${d}</div><div class="task-dots">${dots}</div>`;
+            div.onclick = () => selectDate(dateStr, div);
+            grid.appendChild(div);
+        }
+    }
+
+    function changeMonth(delta) {
+        currentDate.setMonth(currentDate.getMonth() + delta);
+        selectedDate = null;
+        renderCalendar();
+        document.getElementById('selectedDateText').innerText = "-";
+        document.getElementById('calendarDayTasks').innerHTML = "";
+    }
+
+    function selectDate(dateStr, el) {
+        document.querySelectorAll('.calendar-day').forEach(e => e.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedDate = dateStr;
+        
+        document.getElementById('selectedDateText').innerText = new Date(dateStr).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+        
+        // Filter tugas untuk tanggal ini
+        const dayTasks = tasks.filter(t => t.deadline && t.deadline.startsWith(dateStr));
+        const container = document.getElementById('calendarDayTasks');
+        
+        if(dayTasks.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-sub)">Tidak ada tugas.</p>';
+        } else {
+            container.innerHTML = dayTasks.map(t => `
+                <div class="task-item priority-${t.priority}" style="padding:8px; margin-bottom:5px;">
+                    <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${t.id})">
+                    <span style="margin-left:10px; color:var(--text-main); text-decoration:${t.completed?'line-through':'none'}">${t.text}</span>
+                </div>
+            `).join('');
+        }
+    }
+
+    function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+    }
+</script>
+
+</body>
+</html>
